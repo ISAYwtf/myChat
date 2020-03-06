@@ -1,0 +1,2 @@
+rootProject.name='SkillboxChat'
+include ':app'
