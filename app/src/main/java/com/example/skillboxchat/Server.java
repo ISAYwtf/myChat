@@ -21,14 +21,16 @@ public class Server {
     // Нам MainActivity - это потребитель сообщений
     // Пара из двух строк - имя пользователя и текст сообщений
     private Consumer<Pair<String, String>> messageConsumer;
+    private Consumer<Pair<String, String>> privateMessageConsumer;
     private Consumer<Pair<Collection<String>, String>> userSizeConsumer;
 
     // Карта имен пользователей
     private Map<Long, String> nameMap = new ConcurrentHashMap<>();
 
-    public Server(Consumer<Pair<String, String>> messageConsumer, Consumer<Pair<Collection<String>, String>> userSizeConsumer) {
+    public Server(Consumer<Pair<String, String>> messageConsumer, Consumer<Pair<Collection<String>, String>> userSizeConsumer, Consumer<Pair<String, String>> privateMessageConsumer) {
         this.messageConsumer = messageConsumer;
         this.userSizeConsumer = userSizeConsumer;
+        this.privateMessageConsumer = privateMessageConsumer;
     }
 
     // Будем вызывать, когда нужно подключиться к серверу
@@ -97,12 +99,40 @@ public class Server {
         if (name == null) {
             name = "Unnamed";
         }
-        messageConsumer.accept(new Pair<String, String>(message.getEncodedText(), name) );
+        String text = null;
+        try {
+            text = Crypto.decrypt(message.getEncodedText());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (message.getReceiver() == Protocol.Message.GROUP_CHAT) {
+            messageConsumer.accept(new Pair<String, String>(text, name) );
+        } else {
+            privateMessageConsumer.accept(new Pair<String, String>(text, name) );
+        }
     }
 
     public void sendMessage(String messageText) {
+        long receiver = Protocol.Message.GROUP_CHAT;
+        if (messageText.contains("@")) {
+            String name = messageText.split("@")[0].trim();
+            for (Long id: nameMap.keySet()) {
+                if (nameMap.get(id).equals(name)) {
+                    receiver = id;
+                    break;
+                }
+            }
+        }
+        try {
+            messageText = Crypto.encrypt(messageText);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Protocol.Message m = new Protocol.Message(messageText);
+        m.setReceiver(receiver);
         String json = Protocol.packMessage(
-                new Protocol.Message(messageText)
+                m
         );
         if (client != null && client.isOpen() ) {
             client.send(json);

@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
@@ -58,13 +59,26 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         TextView usersNum = findViewById(R.id.usersNum);
-                        usersNum.setText("Пользователей онлайн: " + collectionStringPair.first.size() + "\n"
-                        + collectionStringPair.first);
+                        usersNum.setText("Пользователей онлайн: " + collectionStringPair.first.size()
+                                + "\n" + collectionStringPair.first
+                        );
 
                         if (collectionStringPair.second != "" && collectionStringPair.second != myName) {
                             showToast(collectionStringPair.second);
                         }
 
+                    }
+                });
+            }
+        }, new Consumer<Pair<String, String>>() {
+            @Override
+            public void accept(final Pair<String, String> pair) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Сюда приходят сообщения
+                        String text = String.format("From %s: %s", pair.second, pair.first);
+                        Toast.makeText(MainActivity.this, text, Toast.LENGTH_LONG).show();
                     }
                 });
             }

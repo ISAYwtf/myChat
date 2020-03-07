@@ -56,7 +56,7 @@ public class Protocol {
     }
 
     static class Message {
-        private static final int GROUP_CHAT = 1; // ID группового чата
+        public static final int GROUP_CHAT = 1; // ID группового чата
         private long sender; // Отправитель
         private long receiver = GROUP_CHAT; // Получатель
         private String encodedText; // Текст сообщения
