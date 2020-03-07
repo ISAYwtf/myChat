@@ -7,15 +7,23 @@ import androidx.appcompat.view.ActionMode;
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Pair;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.cryptochat.MessageController;
+
+import java.util.Collection;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,12 +42,29 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         // Сюда приходят сообщения
                         controller.addMessage(
-                            new MessageController.Message(
-                                pair.first,
-                                pair.second,
-                                false
-                            )
+                                new MessageController.Message(
+                                        pair.first,
+                                        pair.second,
+                                        false
+                                )
                         );
+                    }
+                });
+            }
+        }, new Consumer<Pair<Collection<String>, String>>() {
+            @Override
+            public void accept(final Pair<Collection<String>, String> collectionStringPair) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView usersNum = findViewById(R.id.usersNum);
+                        usersNum.setText("Пользователей онлайн: " + collectionStringPair.first.size() + "\n"
+                        + collectionStringPair.first);
+
+                        if (collectionStringPair.second != "" && collectionStringPair.second != myName) {
+                            showToast(collectionStringPair.second);
+                        }
+
                     }
                 });
             }
@@ -101,5 +126,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
         builder.show();
+
     }
+
+    public void showToast(String name) {
+        //создаём и отображаем текстовое уведомление
+        Toast toastName = Toast.makeText(getApplicationContext(),
+                name + " подключился к чату",
+                Toast.LENGTH_LONG);
+        toastName.show();
+
+    }
+
 }

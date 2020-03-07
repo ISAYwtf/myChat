@@ -10,6 +10,8 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,12 +21,14 @@ public class Server {
     // Нам MainActivity - это потребитель сообщений
     // Пара из двух строк - имя пользователя и текст сообщений
     private Consumer<Pair<String, String>> messageConsumer;
+    private Consumer<Pair<Collection<String>, String>> userSizeConsumer;
 
     // Карта имен пользователей
     private Map<Long, String> nameMap = new ConcurrentHashMap<>();
 
-    public Server(Consumer<Pair<String, String>> messageConsumer) {
+    public Server(Consumer<Pair<String, String>> messageConsumer, Consumer<Pair<Collection<String>, String>> userSizeConsumer) {
         this.messageConsumer = messageConsumer;
+        this.userSizeConsumer = userSizeConsumer;
     }
 
     // Будем вызывать, когда нужно подключиться к серверу
@@ -77,10 +81,14 @@ public class Server {
         Protocol.UserStatus status = Protocol.unpackStatus(json);
         Protocol.User u = status.getUser();
         if (status.isConnected()) { // Новый пользователь подключился
-            nameMap.put(u.getId(), u.getName()); // Положить имя в "карту"
+            nameMap.put( u.getId(), u.getName() ); // Положить имя в "карту"
+            userSizeConsumer.accept( new Pair<Collection<String>, String>( nameMap.values(), u.getName() ) );
         } else { // Пользователь отключился
-            nameMap.remove(u.getId());
+            nameMap.remove( u.getId() );
+            userSizeConsumer.accept( new Pair<Collection<String>, String>( nameMap.values(), "" ) );
         }
+
+
     }
 
     private void onIncomingTextMessage(String json) {
@@ -102,12 +110,9 @@ public class Server {
     }
 
     public void sendName(String name) {
-        String json = Protocol.packName(
-                new Protocol.UserName(name)
-        );
+        String json = Protocol.packName(new Protocol.UserName(name) );
         if (client != null && client.isOpen() ) {
             client.send(json);
         }
     }
-
 }
